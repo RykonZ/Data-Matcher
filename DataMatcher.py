@@ -14,8 +14,8 @@
 # =================================================================
 
 import pandas as pd
-import customtkinter as ctk
 from tkinter import filedialog, messagebox
+import customtkinter as ctk
 import time
 import re
 from datetime import datetime
