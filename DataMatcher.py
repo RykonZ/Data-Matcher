@@ -28,11 +28,9 @@ def resource_path(relative_path):
     Ensures compatibility with both standard Python execution and PyInstaller bundles.
     """
     try:
-        # PyInstaller creates a temporary folder stored in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
 # UI Configuration
@@ -53,7 +51,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
             icon_path = resource_path(icon_name)
             self.iconbitmap(icon_path)
         except Exception as e:
-            # Fallback if icon is missing: log error and continue
             print(f"Icon load skipped: {e}")
 
         # --- Application State ---
@@ -135,6 +132,10 @@ class DataMatcherV4_3_Final(ctk.CTk):
         self.btn_run = ctk.CTkButton(self.tool_bar, text="⚡ RUN & AUDIT", width=160, height=35, command=self.process_logic)
         self.btn_run.pack(side="left", padx=30, pady=10)
 
+        # About / License Button
+        self.btn_about = ctk.CTkButton(self.tool_bar, text="ℹ About", width=80, height=35, fg_color="gray30", hover_color="gray20", command=self.show_about)
+        self.btn_about.pack(side="right", padx=10)
+
         self.btn_export = ctk.CTkButton(self.tool_bar, text="📥 DOWNLOAD AUDITED CSV", width=220, height=35, fg_color="#e67e22", command=self.download_csv)
 
         # Feedback & Progress Monitoring
@@ -152,29 +153,33 @@ class DataMatcherV4_3_Final(ctk.CTk):
         self.footer = ctk.CTkLabel(self, text="Built by RykonZ | version 4.3", font=ctk.CTkFont(size=9))
         self.footer.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-2)
 
+    def show_about(self):
+        """ Displays software version, author, and license information. """
+        about_text = (
+            "Data Matcher V4.3\n"
+            "--------------------------\n"
+            "Author: RykonZ\n"
+            "Release Date: 2025\n\n"
+            "License: GNU GPL v3.0\n"
+            "This is free software; you are free to change and \n"
+            "redistribute it under certain conditions.\n"
+            "Ownership of core logic remains with RykonZ."
+        )
+        messagebox.showinfo("About Data Matcher", about_text)
+
     # --- Data Processing Core ---
     def clean(self, series, trim_only=False):
-        """ 
-        Performs high-speed string normalization using vectorized operations.
-        Vectorized operations are significantly faster than standard loops in Python.
-        """
         series = series.astype(str).fillna("")
-        
         if self.opt_trim.get() or trim_only:
             series = series.str.strip().str.lower()
-            
         if self.opt_strip.get() and not trim_only:
-            # Regex substitution: Removes all non-alphanumeric characters
             series = series.str.replace(r'[^a-zA-Z0-9]', '', regex=True)
-            
         return series
 
     def peek_file_a(self):
-        """ Opens Source File A and retrieves headers without loading the full dataset into memory. """
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if path:
             self.curr_a_path = path
-            # Optimization: Loading 'nrows=0' retrieves column names instantly for large files
             self.curr_a_cols = list(pd.read_csv(path, nrows=0).columns)
             self.lbl_a.configure(text=path.split('/')[-1], text_color="#3498db")
             self.container_a.pack(fill="x")
@@ -186,7 +191,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
             self.update_checks_a(self.drop_id_a.get())
 
     def update_checks_a(self, sel_id):
-        """ Updates the column selection list, excluding the primary ID column. """
         for w in self.scroll_a.winfo_children(): w.destroy()
         self.vars_a = {}
         for c in self.curr_a_cols:
@@ -195,7 +199,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
                 cb.pack(anchor="w", pady=1, padx=10); self.vars_a[c] = v
 
     def add_to_queue(self):
-        """ Adds the current file configuration to the batch processing queue. """
         fname = self.curr_a_path.split('/')[-1]
         if any(item['path'] == self.curr_a_path for item in self.queue_a):
             messagebox.showerror("Duplicate", f"'{fname}' is already in queue.")
@@ -209,7 +212,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
         self.reset_a_section()
 
     def reset_a_section(self):
-        """ Clears the Source Config UI to prepare for the next file selection. """
         self.curr_a_path = ""
         self.lbl_a.configure(text="No file selected", text_color="gray")
         for w in self.container_a.winfo_children():
@@ -217,11 +219,9 @@ class DataMatcherV4_3_Final(ctk.CTk):
         self.container_a.pack_forget()
 
     def peek_file_b(self):
-        """ Opens Reference File B and displays column selection for matching. """
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if path:
             self.ref_path = path
-            # Memory Optimization: Load only headers to determine column structure
             cols_b = list(pd.read_csv(path, nrows=0).columns)
             self.lbl_b.configure(text=path.split('/')[-1], text_color="#9b59b6")
             self.container_b.pack(fill="x")
@@ -233,7 +233,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
                 cb.pack(anchor="w", pady=1, padx=10); self.vars_b[c] = v
 
     def render_queue(self):
-        """ Refreshes the Batch Queue UI display. """
         for w in self.queue_box.winfo_children(): w.destroy()
         for i, item in enumerate(self.queue_a):
             card = ctk.CTkFrame(self.queue_box)
@@ -244,44 +243,29 @@ class DataMatcherV4_3_Final(ctk.CTk):
         self.btn_export.pack_forget()
 
     def remove_item(self, idx):
-        """ Removes an item from the batch queue. """
         self.queue_a.pop(idx)
         self.render_queue()
 
-    # --- Match Engine (Main Logic) ---
     def process_logic(self):
-        """
-        Executes the matching algorithm across three tiers:
-        1. Exact Match
-        2. Case/Trim Neutral Match
-        3. Symbol-Stripped Neutral Match
-        """
         try:
             sel_b = [k for k, v in self.vars_b.items() if v.get()]
             if not self.queue_a or not self.ref_path or not sel_b:
                 messagebox.showerror("Error", "Missing Queue or Reference File configuration.")
-                self.btn_export.pack_forget()
                 return
 
             start_t = time.time()
             self.progress_bar.set(0)
             self.stat_label.configure(text="Initializing Memory...", text_color="#3498db")
-            self.update_idletasks() # Refresh UI to show status before processing
+            self.update_idletasks()
             
-            # Optimization: Only load the necessary columns from Reference File B
             df_b = pd.read_csv(self.ref_path, usecols=sel_b)
-            
-            # Optimization: Flatten the DataFrame into a NumPy array for ultra-fast conversion to a Set
-            # Set-based lookups are O(1) compared to O(n) list lookups.
             vals_b = df_b[sel_b].astype(str).to_numpy().flatten()
             
-            # Generate Lookup Sets
             ref_raw = set(vals_b)
             s_vals_b = pd.Series(vals_b)
             ref_trim = set(self.clean(s_vals_b, trim_only=True).unique())
             ref_strip = set(self.clean(s_vals_b).unique())
             
-            # Free memory from temporary reference objects
             del df_b, vals_b, s_vals_b
 
             results = []
@@ -298,21 +282,17 @@ class DataMatcherV4_3_Final(ctk.CTk):
                 df['Audit_Timestamp'] = timestamp
 
                 for col in item["cols"]:
-                    # Tier 1: Exact Case-Sensitive Match
                     exact_mask = df[col].astype(str).isin(ref_raw)
                     df.loc[exact_mask & (df['Match_Fidelity'] == "No Match"), 'Match_Fidelity'] = "Exact Match"
                     
-                    # Tier 2: Match after removing white-space and matching case
                     if self.opt_trim.get():
                         trim_mask = self.clean(df[col], trim_only=True).isin(ref_trim)
                         df.loc[trim_mask & (df['Match_Fidelity'] == "No Match"), 'Match_Fidelity'] = "Fidelity: Trimmed/Case"
 
-                    # Tier 3: Match after removing special characters (symbols/dots/dashes)
                     if self.opt_strip.get():
                         strip_mask = self.clean(df[col]).isin(ref_strip)
                         df.loc[strip_mask & (df['Match_Fidelity'] == "No Match"), 'Match_Fidelity'] = "Fidelity: Symbol Stripped"
                 
-                # Filter results based on User Choice (Unique IDs vs All Records)
                 matched = df[df['Match_Fidelity'] != "No Match"]
                 if self.mode_var.get() == "Unique":
                     matched = matched.drop_duplicates(subset=[item["id"]])
@@ -320,7 +300,6 @@ class DataMatcherV4_3_Final(ctk.CTk):
                 results.append(matched)
                 self.progress_bar.set((i+1)/total)
 
-            # Consolidate all queue results into one DataFrame
             self.final_df = pd.concat(results, ignore_index=True)
             
             if not self.final_df.empty:
@@ -331,14 +310,11 @@ class DataMatcherV4_3_Final(ctk.CTk):
                 self.stat_label.configure(text=f"Success! {len(self.final_df)} matches verified in {elapsed:.1f}s.", text_color="#2ecc71")
             else:
                 self.stat_label.configure(text="No matches found.", text_color="#e74c3c")
-                self.btn_export.pack_forget()
             
         except Exception as e: 
             messagebox.showerror("Error", str(e))
-            self.btn_export.pack_forget()
 
     def download_csv(self):
-        """ Exports the resulting audit trail to a CSV file. """
         p = filedialog.asksaveasfilename(defaultextension=".csv")
         if p: 
             self.final_df.to_csv(p, index=False)
@@ -346,5 +322,4 @@ class DataMatcherV4_3_Final(ctk.CTk):
 
 if __name__ == "__main__":
     app = DataMatcherV4_3_Final()
-
     app.mainloop()
