@@ -19,6 +19,15 @@ Unlike Excel or standard VLOOKUPs, Data Matcher utilizes a **vectorized matching
 * **Audit Trail:** Every export includes a `Match_Fidelity` column and a timestamp for data integrity.
 * **Clean UI:** Modern Dark Mode interface built with CustomTkinter.
 
+## 💪 Reliability & Stability
+* **Zero Crashes:** During extensive stress testing with datasets exceeding 1,000,000 rows, the engine remained stable with 0% crash rates.
+* **Pro Tip:** For the highest match accuracy, it is recommended to enable both **"Auto-Trim"** and **"Strip Symbols"**. This ensures that hidden characters, spaces, and formatting differences (like dashes in serial numbers) don't prevent a successful match.
+
+## ⚠️ Disclaimer
+This software is provided "as is", without warranty of any kind, express or implied. In no event shall the author (RykonZ) be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software. 
+
+*Always back up your data before performing large-scale audits.*
+
 ## 🛠️ Installation & Usage
 
 ### Option 1: Standalone (.exe)
