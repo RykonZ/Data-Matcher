@@ -28,6 +28,11 @@ This software is provided "as is", without warranty of any kind, express or impl
 
 *Always back up your data before performing large-scale audits.*
 
+## ☕ Support My Work
+If Data Matcher has saved you time or made your work easier, feel free to [Buy Me a Coffee](https://buymeacoffee.com/rykonz)!
+
+**Please Note:** Donations are a wonderful way to show appreciation and support my creative journey as an independent developer. They are gifts of "thanks" and do not represent a contract for faster development, priority feature requests, or dedicated technical support. I build and update this tool out of passion for the community!
+
 ## 🛠️ Installation & Usage
 
 ### Option 1: Standalone (.exe)
