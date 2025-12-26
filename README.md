@@ -33,6 +33,14 @@ If Data Matcher has saved you time or made your work easier, feel free to [Buy M
 
 **Please Note:** Donations are a wonderful way to show appreciation and support my creative journey as an independent developer. They are gifts of "thanks" and do not represent a contract for faster development, priority feature requests, or dedicated technical support. I build and update this tool out of passion for the community!
 
+## AI Usage Statement
+
+AI-assisted tools were used during development in a limited capacity, primarily for
+code formatting, comment refinement, and structural readability improvements.
+
+The core algorithms, data-processing logic, and application design were created by the author.
+All AI-assisted output was reviewed, modified where necessary, and integrated manually.
+
 ## 🛠️ Installation & Usage
 
 ### Option 1: Standalone (.exe)
